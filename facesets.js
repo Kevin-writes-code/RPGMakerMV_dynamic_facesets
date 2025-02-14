@@ -14,6 +14,8 @@
  * @default 11
  * 
  * @help
+ *  You have to wait 1 frame after changing class for changes to take effect.
+ * 
  *  Plugin Commands:
  *      None  
  */
@@ -26,53 +28,49 @@
     const parameters = PluginManager.parameters("facesets")
     const activeSwitch = Number(parameters["Enable Switch ID"] || 11);
 
-    const basecase = "basecase" //set basecase here
-    const characterID = 2; // ID of the character to change face for
+    const basecase = "Actor1" //set basecase here; used to overwrite display in text windows
+    const characterID = 1; // ID of the character to change face for
     const protagFacesets = { //populate with ID/Image Name pairs
-        0: "example image",
-        1: "example 2",
+        1: "Actor1",
+        2: "Actor2",
       };
 
-      let currentFaceset;
-
-      function getDynamicFaceName() {
-        for (const key in protagFacesets){
-            if ($gameSwitches.value(key)) return protagFacesets[key];
-        }
-        //basecase:
-        return basecase;
+    function getDynamicFaceName(actor) {
+      for (const key in protagFacesets){
+          if (key == actor.currentClass().id) return protagFacesets[key];
       }
+      //basecase:
+      return basecase;
+    }
 
-      function preloadFaceset() {
-        const faceName = getDynamicFaceName();
-        ImageManager.loadFace(faceName);
-      }
+    function preloadFaceset(actor) {
+      const faceName = getDynamicFaceName(actor);
+      ImageManager.loadFace(faceName);
+    }
 
     /*
      * function overwrides 
      */
-    
     const _facesetImageNameFunction = Game_Actor.prototype.faceName;
     Game_Actor.prototype.faceName = function() {
         if (!$gameSwitches.value(activeSwitch) || this._actorId != characterID) return _facesetImageNameFunction.call(this);
-
         //if actor is dynamic one:
-        return getDynamicFaceName();
+        return getDynamicFaceName(this);
     }
 
-    const _windowMessageDrawFace = Window_Message.prototype.drawFace;
+    const _changeClass = Game_Actor.prototype.changeClass;
+    Game_Actor.prototype.changeClass = function(ID, keepXP){
+        _changeClass.call(this, ID, keepXP);
+        if (!this._actorId == characterID) return;
+        preloadFaceset(this);
+    }
+
+	const _windowMessageDrawFace = Window_Message.prototype.drawFace;
     Window_Message.prototype.drawFace = function(faceName, faceIndex, x, y, width, height){
         if (faceName == basecase) {
-            faceName = getDynamicFaceName();
+            faceName = getDynamicFaceName($gameActors.actor(characterID));
         }
         _windowMessageDrawFace.call(this, faceName, faceIndex, x, y, width, height)
     }
-
-    const _onSwitchChanged = Game_Switches.prototype.onChange;
-    Game_Switches.prototype.onChange = function() {
-        _onSwitchChanged.call(this);
-        preloadFaceset();
-    }
-
 
 })();
