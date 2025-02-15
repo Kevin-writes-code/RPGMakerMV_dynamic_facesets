@@ -69,6 +69,7 @@
     Window_Message.prototype.drawFace = function(faceName, faceIndex, x, y, width, height){
         if (faceName == basecase) {
             faceName = getDynamicFaceName($gameActors.actor(characterID));
+	    	setTimeout(() => {_windowMessageDrawFace.call(this, faceName, faceIndex, x, y, width, height)}, 100);
         }
         _windowMessageDrawFace.call(this, faceName, faceIndex, x, y, width, height)
     }
